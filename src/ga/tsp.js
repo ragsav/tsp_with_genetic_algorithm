@@ -66,7 +66,7 @@ const TSP = (props) => {
   }, [generations, initialPopulation]);
 
   useEffect(() => {
-    if (canvasRef && canvasRef.current && over) {
+    if (canvasRef && canvasRef.current) {
       setOver(false);
 
       const canvas = document.getElementById("canvas");
