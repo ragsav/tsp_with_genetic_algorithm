@@ -128,7 +128,7 @@ const GA = function* (cities, graph, generations, initialPopulation) {
       return 0;
     });
     population = population.splice(0, initialPopulation);
-    yield { result: population[0], size: population.length };
+    yield { result: population[0], size: population.length ,gen};
   }
 };
 

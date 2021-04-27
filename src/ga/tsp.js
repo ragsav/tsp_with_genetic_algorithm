@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Row, Button, Col } from "react-bootstrap";
-import { RangeStepInput } from "react-range-step-input";
+import { GithubPicker } from "react-color";
 import GA from "./ga";
+import { Range } from "./range";
 
 const generateRandomGraph = (n, height, width) => {
   const graphNodes = [];
@@ -13,35 +14,35 @@ const generateRandomGraph = (n, height, width) => {
   return graphNodes;
 };
 
-const plotNodes = (ctx, graph) => {
+const plotNodes = (ctx, graph, cityColor) => {
   let l = graph.length;
   for (let i = 0; i < l; i++) {
     ctx.beginPath();
-    ctx.arc(graph[i].x, graph[i].y, 10, 0, 2 * Math.PI);
-    ctx.fillStyle = "#FF0000";
+    ctx.arc(graph[i].x, graph[i].y, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = cityColor;
     ctx.fill();
     ctx.closePath();
-    ctx.font = "8pt Calibri";
-    ctx.fillStyle = "white";
-    ctx.textAlign = "center";
-    ctx.fillText(i.toString(), graph[i].x - 0.5, graph[i].y + 3);
+    // ctx.font = "8pt Calibri";
+    // ctx.fillStyle = "white";
+    // ctx.textAlign = "center";
+    // ctx.fillText(i.toString(), graph[i].x - 0.5, graph[i].y + 3);
   }
 };
 
-const plotEdges = (ctx, graph, result) => {
+const plotEdges = (ctx, graph, result, edgeColor, cityColor) => {
   ctx?.clearRect(0, 0, window.innerWidth - 300, window.innerHeight);
   // plotEdges(ctx, graphRef.current);
 
-  let l = result.length;
+  let l = result ? result.length : 0;
   for (let i = 0; i < l - 1; i++) {
     ctx.beginPath();
     ctx.moveTo(graph[result[i]].x, graph[result[i]].y);
     ctx.lineTo(graph[result[i + 1]].x, graph[result[i + 1]].y);
-    ctx.strokeStyle = "#40FF00";
+    ctx.strokeStyle = edgeColor;
     ctx.stroke();
   }
 
-  plotNodes(ctx, graph);
+  plotNodes(ctx, graph, cityColor);
 };
 
 const TSP = (props) => {
@@ -56,6 +57,9 @@ const TSP = (props) => {
   const [cities, setCities] = useState(10);
   const [data, setData] = useState(null);
   const [over, setOver] = useState(true);
+  const [cityColor, setCityColor] = useState("#9AFF6E");
+  const [edgeColor, setEdgeColor] = useState("#DA60FF");
+  const [showCityNumber, setShowCityNumber] = useState(false);
 
   useEffect(() => {
     setGASteps(GA(cities, graphRef.current, generations, initialPopulation));
@@ -63,6 +67,8 @@ const TSP = (props) => {
 
   useEffect(() => {
     if (canvasRef && canvasRef.current && over) {
+      setOver(false);
+
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
       graphRef.current = generateRandomGraph(
@@ -71,13 +77,25 @@ const TSP = (props) => {
         window.innerWidth - 300
       );
       ctx?.clearRect(0, 0, window.innerWidth - 300, window.innerHeight);
+      setData(null);
       // plotEdges(ctx, graphRef.current);
-      plotNodes(ctx, graphRef.current);
+      plotNodes(ctx, graphRef.current, cityColor);
       setCtx(ctx);
       setGASteps(GA(cities, graphRef.current, generations, initialPopulation));
     }
   }, [canvasRef, cities, over]);
 
+  useEffect(() => {
+    if (status.localeCompare("Paused") === 0 && ctx) {
+      plotEdges(
+        ctx,
+        graphRef.current,
+        data?.result?.path,
+        edgeColor,
+        cityColor
+      );
+    }
+  }, [cityColor, edgeColor]);
   useEffect(() => {
     if (gaSteps != null && status.localeCompare("Playing") === 0) {
       const interval = setInterval(() => {
@@ -91,13 +109,28 @@ const TSP = (props) => {
         }
         const state = next.value;
         setData(state);
-        plotEdges(ctx, graphRef.current, state.result.path);
+        plotEdges(
+          ctx,
+          graphRef.current,
+          state.result.path,
+          edgeColor,
+          cityColor
+        );
       }, speed);
       return () => {
         clearInterval(interval);
       };
     }
-  }, [gaSteps, status, speed, initialPopulation, generations, cities]);
+  }, [
+    gaSteps,
+    status,
+    speed,
+    initialPopulation,
+    generations,
+    cities,
+    cityColor,
+    edgeColor,
+  ]);
 
   return (
     <div style={{ display: "flex" }}>
@@ -117,6 +150,7 @@ const TSP = (props) => {
               }
               style={{
                 padding: "2px 8px 2px 8px",
+                margin: "0px 4px 0px 4px",
                 boxShadow: "none",
                 fontSize: 12,
               }}
@@ -129,6 +163,24 @@ const TSP = (props) => {
             >
               {status.localeCompare("Playing") === 0 ? "Pause" : "Play"}
             </Button>
+            <Button
+              disabled={over}
+              variant={
+                status.localeCompare("Playing") === 0 ? "dark" : "success"
+              }
+              style={{
+                padding: "2px 8px 2px 8px",
+                margin: "0px 4px 0px 4px",
+                boxShadow: "none",
+                fontSize: 12,
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                setOver(true);
+              }}
+            >
+              Restart
+            </Button>
           </Col>
 
           <Col style={{ padding: 2, margin: 0 }}>
@@ -139,116 +191,144 @@ const TSP = (props) => {
             ) : null}
           </Col>
         </Row>
+
+        <div
+          style={{ width: "100%", height: 1, backgroundColor: "#989898" }}
+        ></div>
         <Row
           style={{
             padding: 2,
             margin: "2px 0px 2px 0px",
-            border: "1px solid #676767",
-            borderRadius: 4,
           }}
         >
-          <Col style={{ padding: 2, margin: 0 }}>
-            <RangeStepInput
-              min={100}
-              max={2000}
-              value={speed}
-              step={100}
-              onChange={(e) => {
-                e.preventDefault();
-                setSpeed(e.target.value);
-              }}
-              style={{ margin: 0, padding: 0 }}
-            />
-          </Col>
           <Col
-            style={{ padding: 2, margin: 0, fontSize: 12, fontWeight: "600" }}
+            style={{
+              padding: 2,
+              margin: 0,
+              display: "flex",
+              justifyContent: "flex-start",
+            }}
           >
-            <span>{`Speed : ${speed}`}</span>
+            {data ? (
+              <span
+                style={{ fontSize: 12, fontWeight: "500", textAlign: "left" }}
+              >{`Generation covered : ${Math.floor(data.gen)}`}</span>
+            ) : null}
           </Col>
         </Row>
+
+        <Range
+          min={0}
+          max={20000}
+          step={10}
+          title="Generations"
+          value={generations}
+          onChange={(val) => {
+            setGenerations(val);
+          }}
+        ></Range>
+
+        <Range
+          min={0}
+          max={100}
+          step={1}
+          title="Cities"
+          value={cities}
+          onChange={(val) => {
+            setCities(val);
+          }}
+        ></Range>
+
+        <Range
+          min={10}
+          max={100}
+          step={1}
+          title="Initial population"
+          value={initialPopulation}
+          onChange={(val) => {
+            setInitialPopulation(val);
+          }}
+        ></Range>
+
+        <Range
+          min={50}
+          max={2000}
+          step={10}
+          title="Speed"
+          value={speed}
+          onChange={(val) => {
+            setSpeed(val);
+          }}
+        ></Range>
+
+        <div
+          style={{ width: "100%", height: 1, backgroundColor: "#989898" }}
+        ></div>
+        <Row
+          style={{
+            padding: 2,
+            margin: "4px 0px 4px 0px",
+            textAlign: "left",
+            fontSize: 12,
+            fontWeight: "500",
+            display: "flex",
+            justifyContent: "flex-start",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: cityColor,
+              width: 10,
+              height: 10,
+              margin: "0px 10px 0px 0px",
+              borderRadius: 5,
+            }}
+          ></div>
+          <span>City color</span>
+        </Row>
+        <GithubPicker
+          width={"100%"}
+          color={cityColor}
+          triangle="hide"
+          onChangeComplete={(color, event) => {
+            // console.log(color);
+            setCityColor(color.hex);
+          }}
+        />
 
         <Row
           style={{
             padding: 2,
-            margin: "2px 0px 2px 0px",
-            border: "1px solid #676767",
-            borderRadius: 4,
+            margin: "2px 0px 4px 0px",
+            textAlign: "left",
+            fontSize: 12,
+            fontWeight: "500",
+            display: "flex",
+            justifyContent: "flex-start",
+            alignItems: "center",
           }}
         >
-          <Col style={{ padding: 2, margin: 0 }}>
-            <RangeStepInput
-              min={5}
-              max={100}
-              value={initialPopulation}
-              step={1}
-              onChange={(e) => {
-                e.preventDefault();
-                setInitialPopulation(e.target.value);
-              }}
-              style={{ margin: 0, padding: 0 }}
-            />
-          </Col>
-          <Col
-            style={{ padding: 2, margin: 0, fontSize: 12, fontWeight: "600" }}
-          >
-            <span>{`Initial population : ${initialPopulation}`}</span>
-          </Col>
+          <div
+            style={{
+              backgroundColor: edgeColor,
+              width: 10,
+              height: 10,
+              margin: "0px 10px 0px 0px",
+              borderRadius: 5,
+            }}
+          ></div>
+          <span>Edge color</span>
         </Row>
-
-        <Row
-          style={{
-            padding: 2,
-            margin: "2px 0px 2px 0px",
-            border: "1px solid #676767",
-            borderRadius: 4,
+        <GithubPicker
+          width={"100%"}
+          triangle="hide"
+          color={edgeColor}
+          onChangeComplete={(color, event) => {
+            // console.log(color);
+            setEdgeColor(color.hex);
           }}
-        >
-          <Col style={{ padding: 2, margin: 0 }}>
-            <RangeStepInput
-              min={1}
-              max={200}
-              value={generations}
-              step={1}
-              onChange={(e) => {
-                e.preventDefault();
-                setGenerations(e.target.value);
-              }}
-              style={{ margin: 0, padding: 0 }}
-            />
-          </Col>
-          <Col
-            style={{ padding: 2, margin: 0, fontSize: 12, fontWeight: "600" }}
-          >
-            <span>{`Generations : ${generations}`}</span>
-          </Col>
-        </Row>
-        <Row
-          style={{
-            padding: 2,
-            margin: "2px 0px 2px 0px",
-            border: "1px solid #676767",
-            borderRadius: 4,
-          }}
-        >
-          <Col style={{ padding: 2, margin: 0 }}>
-            <RangeStepInput
-              min={1}
-              max={40}
-              value={cities}
-              step={1}
-              onChange={(e) => {
-                e.preventDefault();
-                setCities(e.target.value);
-              }}
-              style={{ margin: 0, padding: 0 }}
-            />
-          </Col>
-          <Col
-            style={{ padding: 2, margin: 0, fontSize: 12, fontWeight: "600" }}
-          >
-            <span>{`Cities : ${cities}`}</span>
-          </Col>
-        </Row>
+        />
       </div>
       <div
         style={{ width: window.innerWidth - 300, height: window.innerHeight }}
