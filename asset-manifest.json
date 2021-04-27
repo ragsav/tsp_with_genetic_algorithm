@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/tsp_with_genetic_algorithm/static/css/main.a8ebe30d.chunk.css",
-    "main.js": "/tsp_with_genetic_algorithm/static/js/main.143ef484.chunk.js",
-    "main.js.map": "/tsp_with_genetic_algorithm/static/js/main.143ef484.chunk.js.map",
+    "main.js": "/tsp_with_genetic_algorithm/static/js/main.32dc9df4.chunk.js",
+    "main.js.map": "/tsp_with_genetic_algorithm/static/js/main.32dc9df4.chunk.js.map",
     "runtime-main.js": "/tsp_with_genetic_algorithm/static/js/runtime-main.3baebb84.js",
     "runtime-main.js.map": "/tsp_with_genetic_algorithm/static/js/runtime-main.3baebb84.js.map",
     "static/css/2.4c97ca4f.chunk.css": "/tsp_with_genetic_algorithm/static/css/2.4c97ca4f.chunk.css",
@@ -21,6 +21,6 @@
     "static/css/2.4c97ca4f.chunk.css",
     "static/js/2.202158f8.chunk.js",
     "static/css/main.a8ebe30d.chunk.css",
-    "static/js/main.143ef484.chunk.js"
+    "static/js/main.32dc9df4.chunk.js"
   ]
 }
